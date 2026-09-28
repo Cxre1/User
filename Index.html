@@ -16,6 +16,7 @@
             justify-content: center;
             padding: 30px;
             margin: 0;
+            min-height: 100vh;
         }
 
         .container {
@@ -23,8 +24,7 @@
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 350px;
+            width: min(100%, 500px);
         }
 
         h2, h3 {
@@ -104,6 +104,7 @@
             border-radius: 5px;
             cursor: pointer;
             color: white;
+            type: button;
         }
 
         .record .deleteBtn {
@@ -143,44 +144,79 @@
             <input type="text" id="name" placeholder="اكتب الاسم">
 
             <label for="email">البريد الإلكتروني</label>
-            <input type="text" id="email" placeholder="اكتب البريد الإلكتروني">
+            <input type="email" id="email" placeholder="اكتب البريد الإلكتروني">
 
             <label for="age">العمر</label>
-            <input type="text" id="age" placeholder="اكتب العمر">
+            <input type="number" id="age" min="1" max="120" placeholder="اكتب العمر">
 
-            <p id="errorMessage" class="error"></p>
+            <p id="errorMessage" class="error" role="alert"></p>
 
             <button type="button" id="addButton">إضافة</button>
         </form>
 
         <h3>السجلات المضافة</h3>
         <input type="text" id="searchInput" placeholder="ابحث بالاسم...">
-        <p id="noResultsMsg" class="error" style="display: none;">لا توجد نتائج مطابقة</p>
+        <p id="noResultsMsg" class="error" role="status" style="display: none;">لا توجد نتائج مطابقة</p>
         <div id="recordsList"></div>
 
     </div>
 
     <script>
-        document.getElementById("addButton").addEventListener("click", function () {
+        function validateRecord(name, email, age, errorElement) {
+            name = name.trim();
+            email = email.trim();
+            age = age.trim();
 
+            if (!name || !email || !age) {
+                errorElement.textContent = "الرجاء تعبئة جميع الحقول";
+                return null;
+            }
+
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                errorElement.textContent = "الرجاء إدخال بريد إلكتروني صحيح";
+                return null;
+            }
+
+            var ageNum = Number(age);
+            if (!Number.isInteger(ageNum) || ageNum < 1 || ageNum > 120) {
+                errorElement.textContent = "العمر يجب أن يكون عددًا صحيحًا بين 1 و120";
+                return null;
+            }
+
+            errorElement.textContent = "";
+            return { name: name.trim(), email: email.trim(), age: age.trim() };
+        }
+        function saveToLocalStorage(record) {
+            var records = JSON.parse(localStorage.getItem("records")) || [];
+            records.push(record);
+            localStorage.setItem("records", JSON.stringify(records));
+        }
+
+        function loadRecordsFromLocalStorage() {
+            var records = JSON.parse(localStorage.getItem("records")) || [];
+            records.forEach(function(record) {
+                createRecord(record.name, record.email, record.age);
+            });
+        }
+
+        function deleteFromLocalStorage(index) {
+            var records = JSON.parse(localStorage.getItem("records")) || [];
+            records.splice(index, 1);
+            localStorage.setItem("records", JSON.stringify(records));
+        }
+
+        document.getElementById("addButton").addEventListener("click", function () {
             var name = document.getElementById("name").value;
             var email = document.getElementById("email").value;
             var age = document.getElementById("age").value;
             var errorMessage = document.getElementById("errorMessage");
 
-            if (name === "" || email === "" || age === "") {
-                errorMessage.textContent = "الرجاء تعبئة جميع الحقول";
-                return;
-            }
+            var validated = validateRecord(name, email, age, errorMessage);
+            if (!validated) return;
 
-            if (isNaN(age)) {
-                errorMessage.textContent = "العمر يجب أن يكون رقم";
-                return;
-            }
-
-            errorMessage.textContent = "";
-
-            createRecord(name, email, age);
+            saveToLocalStorage(validated);
+            createRecord(validated.name, validated.email, validated.age);
             applySearchFilter();
 
             document.getElementById("name").value = "";
@@ -189,10 +225,9 @@
         });
 
         function createRecord(name, email, age) {
-
             var recordDiv = document.createElement("div");
             recordDiv.className = "record";
-            recordDiv.dataset.name = name.toLowerCase();
+            recordDiv.dataset.name = name.toLocaleLowerCase("ar");
 
             var infoRow = document.createElement("div");
             infoRow.className = "infoRow";
@@ -204,10 +239,12 @@
             buttonsDiv.className = "buttons";
 
             var editButton = document.createElement("button");
+            editButton.type = "button";
             editButton.className = "editBtn";
             editButton.textContent = "تعديل";
 
             var deleteButton = document.createElement("button");
+            deleteButton.type = "button";
             deleteButton.className = "deleteBtn";
             deleteButton.textContent = "حذف";
 
@@ -231,19 +268,26 @@
             var nameInput = document.createElement("input");
             nameInput.type = "text";
             nameInput.value = name;
+            nameInput.setAttribute("aria-label", "الاسم");
 
             var emailInput = document.createElement("input");
-            emailInput.type = "text";
+            emailInput.type = "email";
             emailInput.value = email;
+            emailInput.setAttribute("aria-label", "البريد الإلكتروني");
 
             var ageInput = document.createElement("input");
-            ageInput.type = "text";
+            ageInput.type = "number";
+            ageInput.min = "1";
+            ageInput.max = "120";
             ageInput.value = age;
+            ageInput.setAttribute("aria-label", "العمر");
 
             var editErrorMessage = document.createElement("p");
             editErrorMessage.className = "error";
+            editErrorMessage.setAttribute("role", "alert");
 
             var saveButton = document.createElement("button");
+            saveButton.type = "button";
             saveButton.className = "saveBtn";
             saveButton.textContent = "حفظ";
 
@@ -263,29 +307,15 @@
             });
 
             saveButton.addEventListener("click", function () {
+                var validated = validateRecord(nameInput.value, emailInput.value, ageInput.value, editErrorMessage);
+                if (!validated) return;
 
-                var newName = nameInput.value;
-                var newEmail = emailInput.value;
-                var newAge = ageInput.value;
-
-                if (newName === "" || newEmail === "" || newAge === "") {
-                    editErrorMessage.textContent = "الرجاء تعبئة جميع الحقول";
-                    return;
-                }
-
-                if (isNaN(newAge)) {
-                    editErrorMessage.textContent = "العمر يجب أن يكون رقم";
-                    return;
-                }
-
-                editErrorMessage.textContent = "";
-
-                name = newName;
-                email = newEmail;
-                age = newAge;
+                name = validated.name;
+                email = validated.email;
+                age = validated.age;
 
                 infoText.textContent = name + " - " + email + " - " + age;
-                recordDiv.dataset.name = name.toLowerCase();
+                recordDiv.dataset.name = name.toLocaleLowerCase("ar");
 
                 editRow.style.display = "none";
                 infoRow.style.display = "flex";
@@ -295,7 +325,7 @@
         }
 
         function applySearchFilter() {
-            var searchValue = document.getElementById("searchInput").value.toLowerCase();
+            var searchValue = document.getElementById("searchInput").value.trim().toLocaleLowerCase("ar");
             var records = document.querySelectorAll(".record");
             var foundAny = false;
 
@@ -312,6 +342,8 @@
         }
 
         document.getElementById("searchInput").addEventListener("input", applySearchFilter);
+
+        window.addEventListener("DOMContentLoaded", loadRecordsFromLocalStorage);
     </script>
 </body>
 </html>
