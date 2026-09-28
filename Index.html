@@ -104,7 +104,6 @@
             border-radius: 5px;
             cursor: pointer;
             color: white;
-            type: button;
         }
 
         .record .deleteBtn {
@@ -162,6 +161,7 @@
     </div>
 
     <script>
+
         function validateRecord(name, email, age, errorElement) {
             name = name.trim();
             email = email.trim();
@@ -185,27 +185,57 @@
             }
 
             errorElement.textContent = "";
-            return { name: name.trim(), email: email.trim(), age: age.trim() };
+            return { name: name, email: email, age: age };
         }
+
+        
+        function getStoredRecords() {
+            try {
+                return JSON.parse(localStorage.getItem("records")) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function setStoredRecords(records) {
+            try {
+                localStorage.setItem("records", JSON.stringify(records));
+            } catch (e) {
+
+            }
+        }
+
+        function makeId() {
+            return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        }
+
         function saveToLocalStorage(record) {
-            var records = JSON.parse(localStorage.getItem("records")) || [];
+            var records = getStoredRecords();
             records.push(record);
-            localStorage.setItem("records", JSON.stringify(records));
+            setStoredRecords(records);
+        }
+
+        function deleteFromLocalStorage(id) {
+            var records = getStoredRecords().filter(function (r) {
+                return r.id !== id;
+            });
+            setStoredRecords(records);
+        }
+
+        function updateInLocalStorage(record) {
+            var records = getStoredRecords().map(function (r) {
+                return r.id === record.id ? record : r;
+            });
+            setStoredRecords(records);
         }
 
         function loadRecordsFromLocalStorage() {
-            var records = JSON.parse(localStorage.getItem("records")) || [];
-            records.forEach(function(record) {
-                createRecord(record.name, record.email, record.age);
+            getStoredRecords().forEach(function (record) {
+                createRecord(record);
             });
         }
 
-        function deleteFromLocalStorage(index) {
-            var records = JSON.parse(localStorage.getItem("records")) || [];
-            records.splice(index, 1);
-            localStorage.setItem("records", JSON.stringify(records));
-        }
-
+        
         document.getElementById("addButton").addEventListener("click", function () {
             var name = document.getElementById("name").value;
             var email = document.getElementById("email").value;
@@ -215,8 +245,10 @@
             var validated = validateRecord(name, email, age, errorMessage);
             if (!validated) return;
 
-            saveToLocalStorage(validated);
-            createRecord(validated.name, validated.email, validated.age);
+            var record = { id: makeId(), name: validated.name, email: validated.email, age: validated.age };
+
+            saveToLocalStorage(record);
+            createRecord(record);
             applySearchFilter();
 
             document.getElementById("name").value = "";
@@ -224,16 +256,17 @@
             document.getElementById("age").value = "";
         });
 
-        function createRecord(name, email, age) {
+       
+        function createRecord(record) {
             var recordDiv = document.createElement("div");
             recordDiv.className = "record";
-            recordDiv.dataset.name = name.toLocaleLowerCase("ar");
+            recordDiv.dataset.name = record.name.toLocaleLowerCase("ar");
 
             var infoRow = document.createElement("div");
             infoRow.className = "infoRow";
 
             var infoText = document.createElement("span");
-            infoText.textContent = name + " - " + email + " - " + age;
+            infoText.textContent = record.name + " - " + record.email + " - " + record.age;
 
             var buttonsDiv = document.createElement("div");
             buttonsDiv.className = "buttons";
@@ -249,6 +282,7 @@
             deleteButton.textContent = "حذف";
 
             deleteButton.addEventListener("click", function () {
+                deleteFromLocalStorage(record.id);
                 recordDiv.remove();
                 applySearchFilter();
             });
@@ -267,19 +301,19 @@
 
             var nameInput = document.createElement("input");
             nameInput.type = "text";
-            nameInput.value = name;
+            nameInput.value = record.name;
             nameInput.setAttribute("aria-label", "الاسم");
 
             var emailInput = document.createElement("input");
             emailInput.type = "email";
-            emailInput.value = email;
+            emailInput.value = record.email;
             emailInput.setAttribute("aria-label", "البريد الإلكتروني");
 
             var ageInput = document.createElement("input");
             ageInput.type = "number";
             ageInput.min = "1";
             ageInput.max = "120";
-            ageInput.value = age;
+            ageInput.value = record.age;
             ageInput.setAttribute("aria-label", "العمر");
 
             var editErrorMessage = document.createElement("p");
@@ -310,12 +344,14 @@
                 var validated = validateRecord(nameInput.value, emailInput.value, ageInput.value, editErrorMessage);
                 if (!validated) return;
 
-                name = validated.name;
-                email = validated.email;
-                age = validated.age;
+                record.name = validated.name;
+                record.email = validated.email;
+                record.age = validated.age;
 
-                infoText.textContent = name + " - " + email + " - " + age;
-                recordDiv.dataset.name = name.toLocaleLowerCase("ar");
+                updateInLocalStorage(record);
+
+                infoText.textContent = record.name + " - " + record.email + " - " + record.age;
+                recordDiv.dataset.name = record.name.toLocaleLowerCase("ar");
 
                 editRow.style.display = "none";
                 infoRow.style.display = "flex";
@@ -324,6 +360,7 @@
             });
         }
 
+      
         function applySearchFilter() {
             var searchValue = document.getElementById("searchInput").value.trim().toLocaleLowerCase("ar");
             var records = document.querySelectorAll(".record");
@@ -343,6 +380,7 @@
 
         document.getElementById("searchInput").addEventListener("input", applySearchFilter);
 
+       
         window.addEventListener("DOMContentLoaded", loadRecordsFromLocalStorage);
     </script>
 </body>
