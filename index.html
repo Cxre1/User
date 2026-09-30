@@ -1,0 +1,139 @@
+.container {
+        background-color: #ffffff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 350px;
+    }
+
+    h2, h3 {
+        text-align: center;
+        color: #333;
+    }
+
+    label {
+        display: block;
+        margin-top: 12px;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+    }
+
+    input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+
+    .error {
+        color: red;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    button#addButton {
+        margin-top: 15px;
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    button#addButton:hover {
+        background-color: #45a049;
+    }
+
+    .record {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        margin-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .record button {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .record button:hover {
+        background-color: #c0392b;
+    }
+</style>
+<div class="container">
+    <h2>إضافة سجل جديد</h2>
+
+    <form id="recordForm">
+        <label for="name">الاسم</label>
+        <input type="text" id="name" placeholder="اكتب الاسم">
+
+        <label for="email">البريد الإلكتروني</label>
+        <input type="text" id="email" placeholder="اكتب البريد الإلكتروني">
+
+        <label for="age">العمر</label>
+        <input type="text" id="age" placeholder="اكتب العمر">
+
+        <p id="errorMessage" class="error"></p>
+
+        <button type="button" id="addButton">إضافة</button>
+    </form>
+
+    <h3>السجلات المضافة</h3>
+    <div id="recordsList"></div>
+</div>
+
+<script>
+    document.getElementById("addButton").addEventListener("click", function () {
+
+        var name = document.getElementById("name").value;
+        var email = document.getElementById("email").value;
+        var age = document.getElementById("age").value;
+        var errorMessage = document.getElementById("errorMessage");
+
+        if (name === "" || email === "" || age === "") {
+            errorMessage.textContent = "الرجاء تعبئة جميع الحقول";
+            return;
+        }
+
+        if (isNaN(age)) {
+            errorMessage.textContent = "العمر يجب أن يكون رقم";
+            return;
+        }
+
+        errorMessage.textContent = "";
+
+        var recordDiv = document.createElement("div");
+        recordDiv.className = "record";
+
+        var infoText = document.createElement("span");
+        infoText.textContent = name + " - " + email + " - " + age;
+
+        var deleteButton = document.createElement("button");
+        deleteButton.textContent = "حذف";
+
+        deleteButton.addEventListener("click", function () {
+            recordDiv.remove();
+        });
+
+        recordDiv.appendChild(infoText);
+        recordDiv.appendChild(deleteButton);
+
+        document.getElementById("recordsList").appendChild(recordDiv);
+
+        document.getElementById("name").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("age").value = "";
+    });
+</script>
